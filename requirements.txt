@@ -1,0 +1,5 @@
+itsdangerous==1.1.0
+mysql-connector-python
+requests
+hashids
+python-dotenv
