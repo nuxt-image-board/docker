@@ -29,6 +29,8 @@ services:
           PUBLIC_PATH: ${PUBLIC_PATH}
     environment:
       API_SSR_ENDPOINT: http://nb_api:5000
+      API_CSR_ENDPOINT: ${API_CSR_ENDPOINT}
+      API_CDN_ENDPOINT: ${API_CDN_ENDPOINT}
       API_SSR_TOKEN: ${API_SSR_TOKEN}
     ports:
       - ${PORT_WEB}:3000
