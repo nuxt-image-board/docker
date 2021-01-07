@@ -1,0 +1,14 @@
+# Pythonイメージの取得
+FROM python:3.8.6-slim-buster
+# ワーキングディレクトリの指定
+WORKDIR /usr/local/app
+RUN apt update && apt install git -y
+RUN git clone https://github.com/nuxt-image-board/backend
+WORKDIR /usr/local/app/backend
+# モジュールを揃える
+RUN pip install --upgrade pip
+RUN pip install -r requirements.txt
+# 起動環境設定
+EXPOSE 5000
+ENTRYPOINT [ "gunicorn", "app:app" ]
+CMD [ "-w", "2", "-b", "0.0.0.0:5000"]

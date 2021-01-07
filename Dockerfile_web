@@ -1,0 +1,39 @@
+# Nodeイメージの取得
+FROM node:14.15.0-alpine
+# ワーキングディレクトリの指定
+WORKDIR /usr/local/app
+# モジュールを揃える(gitが要る)
+RUN apk add --no-cache --virtual .build-dep alpine-sdk python git
+RUN git clone https://github.com/nuxt-image-board/frontend
+WORKDIR /usr/local/app/frontend
+RUN npm install --production --quiet
+# ビルド
+ARG SITE_NAME
+ARG SITE_NAME_FULL
+ARG SITE_THEME_COLOR
+ARG SITE_BG_COLOR
+ARG SITE_OG_IMAGE
+ARG SITE_URL
+ARG SITE_DESCRIPTION
+ARG ONESIGNAL_ID
+ARG LOGROCKET_ID
+ARG LINE_CLIENT_ID
+ARG LINE_NOTIFY_CLIENT_ID
+ARG TELEGRAM_ID
+ARG CONTACT
+ARG DMCA
+ARG API_CSR_ENDPOINT
+ARG API_SSR_ENDPOINT
+ARG API_CDN_ENDPOINT
+ARG CDN_ENDPOINT
+ARG PUBLIC_PATH
+ENV NODE_ENV production
+RUN npm run build
+# 不要なものを消す
+RUN apk del .build-dep --purge
+RUN rm -rf /var/cache/apk/
+RUN rm -rf config app assets components locales pages plugins
+# 起動環境設定
+ENV HOST 0.0.0.0
+EXPOSE 3000
+CMD ["npm", "run", "start"]

@@ -1,0 +1,155 @@
+version: '3.8'
+
+services:
+  nb_web:
+    container_name: nb_web
+    hostname: nb_web
+    build:
+        context: .
+        dockerfile: Dockerfile_web
+        args:
+          SITE_NAME: ${SITE_NAME}
+          SITE_NAME_FULL: ${SITE_NAME_FULL}
+          SITE_THEME_COLOR: ${SITE_THEME_COLOR}
+          SITE_BG_COLOR: ${SITE_BG_COLOR}
+          SITE_OG_IMAGE: ${SITE_OG_IMAGE}
+          SITE_URL: ${SITE_URL}
+          SITE_DESCRIPTION: ${SITE_DESCRIPTION}
+          API_SSR_ENDPOINT: ${API_SSR_ENDPOINT}
+          API_CSR_ENDPOINT: ${API_CSR_ENDPOINT}
+          ONESIGNAL_ID: ${ONESIGNAL_ID}
+          LOGROCKET_ID: ${LOGROCKET_ID}
+          LINE_CLIENT_ID: ${LINE_CLIENT_ID}
+          LINE_NOTIFY_CLIENT_ID: ${LINE_NOTIFY_CLIENT_ID}
+          TELEGRAM_ID: ${TELEGRAM_ID}
+          CONTACT: ${CONTACT}
+          DMCA: ${DMCA}
+          API_CDN_ENDPOINT: ${API_CDN_ENDPOINT}
+          CDN_ENDPOINT: ${CDN_ENDPOINT}
+          PUBLIC_PATH: ${PUBLIC_PATH}
+    environment:
+      API_SSR_ENDPOINT: http://nb_api:5000
+      API_SSR_TOKEN: ${API_SSR_TOKEN}
+    ports:
+      - ${PORT_WEB}:3000
+    depends_on:
+      - nb_api
+      - toymoney_api
+  nb_api:
+    container_name: nb_api
+    hostname: nb_api
+    build:
+        context: .
+        dockerfile: Dockerfile_api
+    volumes:
+      - ${VOLUME_API_PATH}:/usr/local/app/backend/static
+    environment:
+      SALT_JWT: ${SALT_JWT}
+      SALT_PASS: ${SALT_PASS}
+      SALT_INVITE: ${SALT_INVITE}
+      SALT_TOYMONEY: ${TOYMONEY_SALT}
+      AUTH_LINE_ENDPOINT: ${AUTH_LINE_ENDPOINT}
+      AUTH_LINE_CHANNEL_ID: ${AUTH_LINE_CHANNEL_ID}
+      AUTH_LINE_CHANNEL_SECRET: ${AUTH_LINE_CHANNEL_SECRET}
+      AUTH_LINE_REDIRECT_LOGIN: ${AUTH_LINE_REDIRECT_LOGIN}
+      AUTH_LINE_REDIRECT_CONNECT: ${AUTH_LINE_REDIRECT_CONNECT}
+      AUTH_LINE_NOTIFY_ENDPOINT: ${AUTH_LINE_NOTIFY_CONNECT}
+      AUTH_LINE_NOTIFY_ID: ${AUTH_LINE_NOTIFY_ID}
+      AUTH_LINE_NOTIFY_SECRET: ${AUTH_LINE_NOTIFY_SECRET}
+      AUTH_LINE_NOTIFY_REDIRECT_CONNECT: ${AUTH_LINE_NOTIFY_REDIRECT_CONNECT}
+      TOYMONEY_ENDPOINT: http://toymoney_api:5000
+      TOYMONEY_TOKEN: ${TOYMONEY_TOKEN}
+      TOYMONEY_PASSWORD_HEAD: ${TOYMONEY_PASSWORD_HEAD}
+      API_TELEGRAM_TOKEN: ${API_TELEGRAM_TOKEN}
+      API_ONESIGNAL_APPID: ${API_ONESIGNAL_APPID}
+      API_ONESIGNAL_TOKEN: ${API_ONESIGNAL_TOKEN}
+      API_OWN_ADDRESS: ${API_OWN_ADDRESS}
+      API_CORS: ${API_CORS}
+      DB_HOST: nb_api_db
+      DB_USER: ${DB_USER}
+      DB_PASS: ${DB_PASS}
+      DB_NAME: ${DB_NAME}
+      REDIS_HOST: nb_api_redis
+      REDIS_DB: 0
+      PORT_DB: 3306
+      PORT_REDIS: 6379
+    ports:
+      - ${PORT_API}:5000
+    depends_on:
+      - nb_api_db
+      - nb_api_redis
+  nb_api_db:
+    container_name: nb_api_db
+    hostname: nb_api_db
+    image: mariadb
+    restart: always
+    command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_general_ci
+    volumes:
+      - ${VOLUME_NBDB_PATH}:/var/lib/mysql:delegated
+    ports:
+      - ${PORT_API_MARIA}:3306
+    environment:
+      - MYSQL_ROOT_Host='%'
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT}
+      - MYSQL_DATABASE=${DB_NAME}
+      - MYSQL_USER=${DB_USER}
+      - MYSQL_PASSWORD=${DB_PASS}
+  nb_api_redis:
+    container_name: nb_api_redis
+    hostname: nb_api_redis
+    image: redis:latest
+    restart: always
+    ports:
+      - ${PORT_API_REDIS}:6379
+  nb_api_worker:
+    container_name: nb_api_worker
+    hostname: nb_api_worker
+    volumes:
+      - ${VOLUME_API_PATH}:/usr/local/app/backend/static
+    build:
+        context: .
+        dockerfile: Dockerfile_api_worker
+    depends_on:
+      - nb_api
+      - nb_api_redis
+  toymoney_api:
+    image: dosugamea/toymoney-server:latest
+    container_name: toymoney_api
+    hostname: toymoney_api
+    environment:
+      - SALT=${TOYMONEY_SALT}
+      - DB_TYPE=mysql
+      - DB_HOST=toymoney_db:3306
+      - DB_NAME=${TOYMONEY_DB}
+      - DB_USER=${DB_USER}
+      - DB_PASS=${DB_PASS}
+    ports:
+      - ${PORT_TOY}:5000
+    depends_on:
+      - toymoney_db
+  toymoney_db:
+    image: mariadb
+    container_name: toymoney_db
+    hostname: toymoney_db
+    restart: always
+    command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_general_ci
+    volumes:
+      - ${VOLUME_TOYDB_PATH}:/var/lib/mysql:delegated
+    ports:
+      - ${PORT_TOY_MARIA}:3306
+    environment:
+      - MYSQL_ROOT_Host='%'
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT}
+      - MYSQL_DATABASE=${TOYMONEY_DB}
+      - MYSQL_USER=${DB_USER}
+      - MYSQL_PASSWORD=${DB_PASS}
+  adminer:
+    image: adminer:latest
+    container_name: adminer
+    hostname: adminer
+    restart: always
+    ports:
+      - ${PORT_ADMINER}:8080
+    depends_on:
+      - nb_api_db
+      - toymoney_db
